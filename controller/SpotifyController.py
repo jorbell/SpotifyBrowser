@@ -20,3 +20,9 @@ class SpotifyController:
         return spot.setAlbumSongs(album)
     def getRelatedArtists(artist):
         return spot.getRelatedArtists(artist)
+    def getFavourites():
+        return spot.getFavourites()
+    def setFavourites(favourites):
+        spot.setFavourites(favourites)
+    def getToken():
+        return spot.getToken()

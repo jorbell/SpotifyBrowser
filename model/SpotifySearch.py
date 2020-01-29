@@ -1,12 +1,33 @@
 import sys
 import spotipy
+import sys
+import pickle
 from spotipy.oauth2 import SpotifyClientCredentials
+import spotipy.util as util
 
 client_id='9e638d6be17e4fb8afe62d1cab43d16e'
 client_secret='30990f5f6f90429dbdef5b928bcb1bd9'
 client_credentials_manager = SpotifyClientCredentials(client_id, client_secret)
 sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
 
+def getToken():
+    if len(sys.argv) > 1:
+        username = sys.argv[1]
+    else:
+        print("Usage: %s username" % (sys.argv[0],))
+        sys.exit()
+
+    scope = ''
+    token = util.prompt_for_user_token(username, scope)
+
+    if token:
+        sp = spotipy.Spotify(auth=token)
+        sp.trace = False
+        results = sp.current_user_playlists(limit=50)
+        for i, item in enumerate(results['items']):
+            print("%d %s" %(i, item['name']))
+    else:
+        print("Can't get token for", username)
 class Artist: 
     name=""
     id=""
@@ -44,8 +65,28 @@ def getRelatedArtists(arObj):
 
     return arObj
 
+def custom_sort(t):
+    #print(t.name)
+    return t.name.lower()
+def setFavourites(favourites):
+    favourites.sort(key=custom_sort)
+    with open("favourites", 'wb') as filehandle:
+        pickle.dump(favourites, filehandle)
+
+
+
+def getFavourites():
+    #return open("favourites", "r").read()
+    with open("favourites", "rb") as filehandle:
+        while True:
+            try:
+                favourites = pickle.load(filehandle)
+            except EOFError:
+                break
+                
+    return favourites
+
 def searchArtist(artist):
-    #results = sp.search(q='artist:' + artist, type='artist')
     results = sp.search(q='artist:' + artist, type='artist')
     artists = []
     for item in results['artists']['items']:
@@ -61,7 +102,6 @@ def searchArtist(artist):
         
 
 
-    #print(results['artists']['items'][0])
     return artists
 
 def searchAlbum(album):

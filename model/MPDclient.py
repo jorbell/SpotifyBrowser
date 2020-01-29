@@ -18,3 +18,6 @@ def pause():
 def play():
     global client
     client.pause(0)
+def getCurrentSong():
+    global client
+    return client.currentsong()

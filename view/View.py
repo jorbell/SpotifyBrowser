@@ -9,7 +9,13 @@ stdscr = curses.initscr()
 curses.noecho()
 curses.cbreak()
 
+
 stdscr.keypad(True)
+curses.start_color()
+##Active
+curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
+curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_RED)
+curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
 artistPad = curses.newpad(100,int(curses.COLS/3))
 albumPad = curses.newpad(100,int(curses.COLS/3))
 songPad = curses.newpad(100,int(curses.COLS/3))
@@ -41,6 +47,7 @@ def showSize():
     #infoPad.addstr(5,60,"COLS:"+str(curses.COLS),curses.A_NORMAL)
     #infoPad.addstr(6,60,"Rows:"+str(curses.LINES),curses.A_NORMAL)
     #infoPad.addstr(7,60,"Padwidth:"+str(padwidth),curses.A_NORMAL)
+    refreshPads()
 def resize():
     #curses.KEY_RESIZE
     padwidth = int(curses.COLS/3)
@@ -48,7 +55,7 @@ def resize():
     #curses.resize_term()
     stdscr.clear()
     showSize()
-    refreshPads()
+    #refreshPads()
 def checkResize():
     y, x = stdscr.getmaxyx()
     if int(curses.COLS) != x:
@@ -59,11 +66,11 @@ def checkResize():
 def refreshPads(): 
 #                     start, from, to
 #                     y,x  y,x  y,x
-    artistPad.refresh(0,0, 10,0, curses.LINES-1,50)
-    albumPad.refresh(0,0, 10,padwidth, curses.LINES-1,300)
-    songPad.refresh(0,0, 10,padwidth*2, curses.LINES-1,300)
-    infoPad.refresh(0,0,0,0,9,curses.COLS)
-    #x=1
+    #artistPad.refresh(0,0, 10,0, curses.LINES-1,0)
+    #albumPad.refresh(0,0, 10,padwidth, curses.LINES-1,0)
+    #songPad.refresh(0,0, 10,padwidth*2, curses.LINES-1,0)
+    #infoPad.refresh(0,0,0,0,9,curses.COLS-1)
+    x=1
 
 def fillArtistsPad(artists, cursor):
     i = 0
@@ -75,9 +82,12 @@ def fillArtistsPad(artists, cursor):
     for artist in artists:
         artistPad.addstr(i,0,chr(9553), curses.A_NORMAL)
         if cursor.artist == i-1:
-            artistPad.addstr(i,1,artist.name, curses.A_REVERSE)
+            if cursor.column == 1:
+                artistPad.addstr(i,1,artist.name, curses.color_pair(2))
+            else:
+                artistPad.addstr(i,1,artist.name, curses.color_pair(3))
         else:
-            artistPad.addstr(i,1,artist.name, curses.A_NORMAL)
+            artistPad.addstr(i,1,artist.name, curses.color_pair(1))
         i += 1;
     #artistPad.refresh(0,0, 10,0, (curses.LINES-1),50)
     if (cursor.artist > curses.LINES -12 ):
@@ -97,7 +107,10 @@ def fillAlbumsPad(albums, cursor):
     for album in albums:
         albumPad.addstr(i,0,chr(9553), curses.A_NORMAL)
         if cursor.album == i-1:
-            albumPad.addstr(i,1,albums[i-1].name, curses.A_STANDOUT)
+            if cursor.column == 2:
+                albumPad.addstr(i,1,albums[i-1].name, curses.color_pair(2))
+            else:
+                albumPad.addstr(i,1,albums[i-1].name, curses.color_pair(3))
         else: 
             albumPad.addstr(i,1,albums[i-1].name, curses.A_NORMAL)
         i += 1;
@@ -110,14 +123,18 @@ def fillSongsPad(songs, cursor):
     i= 0;
     #songPad.addstr(i,0,songs[1].name, curses.A_STANDOUT)
     while (i<50):
-        songPad.addstr(i,0,"                                                                              ", curses.A_NORMAL)
+        songPad.addstr(i,0,"                                                                                 ", curses.A_NORMAL)
         i += 1
     i = 1;
+    #songPad.clear()
     songPad.addstr(0,0,"Song:", curses.A_NORMAL)
     for song in songs:
         songPad.addstr(i,0,chr(9553), curses.A_NORMAL)
         if cursor.song == i-1:
-            songPad.addstr(i,1,song.name, curses.A_STANDOUT)
+            if cursor.column == 3:
+                songPad.addstr(i,1,song.name, curses.color_pair(2))
+            else:
+                songPad.addstr(i,1,song.name, curses.color_pair(3))
         else:
             songPad.addstr(i,1,song.name, curses.A_NORMAL)
         i += 1;
@@ -131,7 +148,7 @@ def fillInfoPad(artist):
         infoPad.addstr(i,0,"                                                                          ", curses.A_NORMAL)
         i += 1
 
-    infoPad.addstr(1,0,"Artist: "+artist.name,curses.A_NORMAL)
+    infoPad.addstr(1,0,"Artist: "+artist.name,curses.color_pair(1))
     infoPad.addstr(2,0,"Followers: "+str(artist.followers),curses.A_NORMAL)
     infoPad.addstr(3,0,"",curses.A_NORMAL)
 
@@ -142,9 +159,10 @@ def flushPad(list, pad):
     for item in list:
         pad.addStr(i,0,chr(' ') *curses.COLS, curses.A_NORMAL)
 def getUserEntry():
-    stdscr.addstr(9,0,"Search:                                                       ",curses.A_NORMAL)
+    stdscr.addstr(8,0,"Search:                                                       ",curses.A_NORMAL)
+
     curses.echo()
-    entry = stdscr.getstr(9,7, 40)
+    entry = stdscr.getstr(8,7, 40)
     #stdscr.addstr(9,0,"Search:",curses.A_NORMAL)
     curses.noecho()
     return entry

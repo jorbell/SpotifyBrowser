@@ -17,6 +17,7 @@ mpd.connect(MPDclient.connect())
 spot = SpotifyController.SpotifyController
 spot.setSpotify(SpotifySearch)
 
+
 def setAlbums(artist):
     searchResult[artist].albums = []
     searchResult[artist].albums = spot.setArtistAlbums(searchResult[artist]).albums
@@ -30,19 +31,19 @@ def setSongs(artist,album):
 
 def refreshScreen(searchResult, cursor):
     if cursor.column == 1:
-        vc.fillArtistsPad(searchResult, cursor)
         searchResult = setAlbums(cursor.artist);
+        vc.fillArtistsPad(searchResult, cursor)
         vc.fillAlbumsPad(searchResult[cursor.artist].albums, cursor)
         vc.fillInfoPad(searchResult[cursor.artist])
         cursor.setMaxArtist(len(searchResult))
+
     elif cursor.column == 2:
-        vc.fillAlbumsPad(searchResult[cursor.artist].albums, cursor)
         searchResult = setSongs(cursor.artist, cursor.album);
+        vc.fillAlbumsPad(searchResult[cursor.artist].albums, cursor)
         vc.fillSongsPad(searchResult[cursor.artist].albums[cursor.album].songs, cursor)
         cursor.setMaxAlbum(len(searchResult[cursor.artist].albums))
-
-
     elif cursor.column == 3:
+
         vc.fillSongsPad(searchResult[cursor.artist].albums[cursor.album].songs, cursor)
         cursor.setMaxSong(len(searchResult[cursor.artist].albums[cursor.album].songs))
 
@@ -54,36 +55,49 @@ def addToPlaylist(searchResult, cursor):
         mpd.addToPlaylist(searchResult[cursor.artist].albums[cursor.album].uri)
     if cursor.column == 3:
         mpd.addToPlaylist(searchResult[cursor.artist].albums[cursor.album].songs[cursor.song].uri)
-vc.setView(View)
-cont = True
 
-while (cont):
-    entry = vc.getUserEntry()
-    search = ''.join(chr(x) for x in entry)
-    searchResult = spot.searchArtist(search)
-    if(searchResult):
-        cont = False
-    else: 
-        print("No results")
-#searchResult = spot.searchArtist("tool")
+mpd.connect(MPDclient.connect()) 
+vc.setView(View)
+searchResult = spot.getFavourites()
 refreshScreen(searchResult, cr.getCursor())
 
 running = True
 while(running):
-    #vc.showSize()
     keypress = stdscr.getkey()
-    #vc.resize()
     if vc.checkResize() == True:
-        #vc.showSize()
+        vc.showSize()
         vc.resize()
     try: 
         if int(keypress) >= 1 & int(keypress) <= 9:
             multiplier = int(keypress)
             keypress = stdscr.getkey()
+            try:
+                if int(keypress) >= 1 & int(keypress) <= 9:
+                    multiplier = multiplier*10 + int(keypress)
+                    keypress = stdscr.getkey()
+                else:
+                    mutliplier = multiplier
+            except:
+                multiplier = multiplier
+
         else:
             multiplier = 1
     except:
         multiplier = 1
+
+    
+    #Key parser: 
+    #Vim directional keys (hjkl)
+    #y = search
+    #F = add to favourites
+    #f = see favourites
+    #D = delete artist from favourites
+    #a = Adds whatever is under the cursor to MPD playlist and starts playing
+    #A = same as above, but starts from the first song of the album/artist
+    #o = Deletes the current playlist and adds whatever is under the cursor to MPD playlist
+    #s = stop
+    #q = quit
+
     if keypress == "h":
         for i in range(0, multiplier):
             cr.goLeft()
@@ -119,7 +133,7 @@ while(running):
         if cursor.column == 3:
             mpd.add(searchResult[cursor.artist].albums[cursor.album].songs[cursor.song].uri)
             mpd.playSongPos(-1)
-    elif keypress == "o":
+    elif keypress == "o" or keypress == "KEY_ENTER":
         mpd.connect(MPDclient.connect()) 
         mpd.clear()
         cursor = cr.getCursor()
@@ -138,27 +152,45 @@ while(running):
         mpd.connect(MPDclient.connect()) 
         mpd.pause()
     elif keypress == "y":
-        cr.restartCursor()
-        cont = True
-        while (cont):
-            entry = vc.getUserEntry()
-            search = ''.join(chr(x) for x in entry)
-            searchResult = spot.searchArtist(search)
-            if(searchResult):
-                cont = False
-            else: 
-                print("No results")
-        refreshScreen(searchResult, cr.getCursor())
+        entry = vc.getUserEntry()
+        search = ''.join(chr(x) for x in entry)
+        r = spot.searchArtist(search)
+        if(r):
+            cr.restartCursor()
+            searchResult = r
+            refreshScreen(searchResult, cr.getCursor())
+        else: 
+            print("No results")
+            refreshScreen(searchResult, cr.getCursor())
     elif keypress == "r":
-        #searchResult = searchResult[cr.getCursor().artist].relatedArtists
         searchResult = spot.getRelatedArtists(searchResult[cr.getCursor().artist]).relatedArtists
         cr.restartCursor()
-        """
-        for artist in searchResult:
-            artist = spot.getRelatedArtists(artist)
-            """
         refreshScreen(searchResult, cr.getCursor())
     elif keypress == "q":
         running = False
+    elif keypress == "D":
+        favourites = spot.getFavourites()
+        i = 0;
+        for artist in favourites:
+            if artist.name == searchResult[cr.getCursor().artist].name:
+                try:
+                    del favourites[i]
+                except:
+                    x = 1
+            i +=1
+        spot.setFavourites(favourites)
+        favourites = spot.getFavourites()
+        searchResult = favourites
+        cr.restartCursor()
+        refreshScreen(searchResult, cr.getCursor())
+    elif keypress == "F":
+        favourites = spot.getFavourites()
+        favourites.append(searchResult[cr.getCursor().artist])
+        spot.setFavourites(favourites)
+    elif keypress == "f":
+        searchResult = spot.getFavourites()
+        cr.restartCursor()
+        refreshScreen(searchResult, cr.getCursor())
+
 
 

@@ -19,3 +19,9 @@ class MPDController:
     def clear():
         global client
         client.clear()
+    def getCurrentSong():
+        global client
+        client.currentsong()
+    def getStatus():
+        global client
+        return client.status()
